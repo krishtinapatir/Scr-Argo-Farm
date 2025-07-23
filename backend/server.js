@@ -14,7 +14,8 @@ const corsOptions = {
   origin: [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
-    'http://localhost:3000', // Add other origins if needed
+      'http://localhost:3000',
+    'http://localhost:5000', // Add other origins if needed
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
@@ -56,7 +57,8 @@ app.use('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  // console.log(`Health check: http://localhost:${PORT}/health`);
+console.log(`Health check: /health`);
 });
 
 export default app;
