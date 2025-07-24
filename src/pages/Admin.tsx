@@ -11,8 +11,13 @@ import { CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, Poin
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ChevronDown, ChevronUp, Package, Pencil, Plus, SaveIcon, Trash2, X , Minus } from 'lucide-react';
+
 import React, { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
+
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+
+
 
 // Initialize Chart.js
 ChartJS.register(
@@ -109,6 +114,22 @@ const Admin: React.FC = () => {
       })) as ProductWithStock[];
     },
   });
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
+const handleDeleteClick = (id: string) => {
+  setProductToDelete(id);
+  setConfirmOpen(true);
+};
+
+const handleConfirmDelete = () => {
+  if (productToDelete) {
+    deleteProduct.mutate(productToDelete);
+    setConfirmOpen(false);
+    setProductToDelete(null);
+  }
+};
 
   // Fetch orders with proper error handling
   const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
@@ -1162,15 +1183,17 @@ const Admin: React.FC = () => {
                           <Pencil className="w-4 h-4" />
                            <div>Modify Product</div>
                         </Button>
+                     
                         <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(product.id)}
-                          className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <div>Delete Product</div>
-                        </Button>
+  size="sm"
+  variant="destructive"
+  onClick={() => handleDeleteClick(product.id)}
+  className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm"
+>
+  <Trash2 className="w-4 h-4" />
+  <div>Delete Product</div>
+</Button>
+
                       </>
                     )}
                   </div>
@@ -1183,6 +1206,13 @@ const Admin: React.FC = () => {
     )}
   </div>
 </TabsContent>
+<ConfirmDialog
+  open={confirmOpen}
+  onOpenChange={setConfirmOpen}
+  onConfirm={handleConfirmDelete}
+  title="⚠️ Delete this product?"
+  description="Are you sure you want to delete this product? This action cannot be undone."
+/>
 
         <TabsContent value="orders">
           <div className="bg-white border border-black rounded-lg shadow p-6">
