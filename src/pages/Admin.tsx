@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } from 'chart.js';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ChevronDown, ChevronUp, Package, Pencil, Plus, SaveIcon, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Package, Pencil, Plus, SaveIcon, Trash2, X , Minus } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 
@@ -344,8 +344,9 @@ const Admin: React.FC = () => {
     setStockUpdateQuantity(0);
   };
 
-  const handleStockSave = (operation: 'add' | 'subtract' | 'set' | 'add10') => {
-    if (!stockUpdateProduct) return;
+  const handleStockSave = (operation: 'add' | 'subtract' | 'set' | 'add10', productArg?: ProductWithStock) => {
+    const productToUpdate = productArg || stockUpdateProduct;
+    if (!productToUpdate) return;
 
     let quantity = stockUpdateQuantity;
     let op = operation;
@@ -355,7 +356,7 @@ const Admin: React.FC = () => {
     }
 
     updateStock.mutate({
-      productId: stockUpdateProduct.id,
+      productId: productToUpdate.id,
       newQuantity: quantity,
       operation: op as 'add' | 'subtract' | 'set'
     }, {
@@ -558,74 +559,51 @@ const Admin: React.FC = () => {
     };
 
     return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="text-sm font-medium text-blue-600">Total Orders</h4>
-              <p className="text-2xl font-bold">{orderStats.totalOrders}</p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <h4 className="text-sm font-medium text-green-600">Total Revenue</h4>
-              <p className="text-2xl font-bold">₹{orderStats.totalRevenue.toFixed(2)}</p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <h4 className="text-sm font-medium text-purple-600">Average Order Value</h4>
-              <p className="text-2xl font-bold">₹{orderStats.averageOrderValue.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stock Alerts */}
-        {lowStockProducts.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-400">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
-              Stock Alerts
-            </h3>
-            <div className="space-y-2">
-              {lowStockProducts.map(product => (
-                <div key={product.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded">
-                  <div>
-                    <span className="font-medium">{product.title}</span>
-                    <span className={`ml-2 px-2 py-1 rounded-full text-xs ${getStockStatusColor(product.stock_status)}`}>
-                      {product.stock_quantity} {product.unit} remaining
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleStockUpdate(product)}
-                    variant="outline"
-                  >
-                    <Package className="w-4 h-4 mr-1" />
-                    Restock
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Sales Trend</h3>
-          <div className="h-[400px]">
-            <Line data={lineChartData} options={lineChartOptions} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Order Status Distribution</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(orderStats.statusCounts).map(([status, count]) => (
-              <div key={status} className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-600">{status}</h4>
-                <p className="text-xl font-bold">{count}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+     <div className="space-y-6">
+  {/* Sales Overview */}
+  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+    <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+        <h4 className="text-sm font-medium text-blue-600">Total Orders</h4>
+        <p className="text-2xl font-bold">{orderStats.totalOrders}</p>
       </div>
+      <div className="p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+        <h4 className="text-sm font-medium text-green-600">Total Revenue</h4>
+        <p className="text-2xl font-bold">₹{orderStats.totalRevenue.toFixed(2)}</p>
+      </div>
+      <div className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+        <h4 className="text-sm font-medium text-purple-600">Average Order Value</h4>
+        <p className="text-2xl font-bold">₹{orderStats.averageOrderValue.toFixed(2)}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Sales Trend */}
+  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+    <h3 className="text-lg font-semibold mb-4">Sales Trend</h3>
+    <div className="h-[400px]">
+      <Line data={lineChartData} options={lineChartOptions} />
+    </div>
+  </div>
+
+  {/* Order Status Distribution */}
+  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+    <h3 className="text-lg font-semibold mb-4">Order Status Distribution</h3>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {Object.entries(orderStats.statusCounts).map(([status, count]) => (
+        <div
+          key={status}
+          className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 hover:scale-[1.02] transition transform duration-200 ease-in-out"
+        >
+          <h4 className="text-sm font-medium text-gray-600">{status}</h4>
+          <p className="text-xl font-bold">{count}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
     );
   };
 
@@ -634,338 +612,582 @@ const Admin: React.FC = () => {
       <h1 className="text-3xl mt-9 font-bold mb-8">Admin Dashboard</h1>
 
       <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-400 text-black" >
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="users">Active Users</TabsTrigger>
+          <TabsTrigger value="analytics">Sale Analytics</TabsTrigger>
         </TabsList>
 
+
         <TabsContent value="products">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Products & Stock Management</h2>
-              {!isAddingNew && (
-                <Button onClick={() => {
-                  setIsAddingNew(true);
-                  setEditingProduct(null);
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Product
-                </Button>
-              )}
-            </div>
+  <div className="bg-white rounded-lg shadow p-6">
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-semibold text-gray-800">Products & Stock Management</h2>
+      {!isAddingNew && (
+        <Button 
+          onClick={() => {
+            setIsAddingNew(true);
+            setEditingProduct(null);
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New Product
+        </Button>
+      )}
+    </div>
 
-            {isAddingNew && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 border rounded-lg"
-              >
-                <h3 className="text-lg font-medium mb-4">Add New Product</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label htmlFor="new-title" className="block text-sm font-medium mb-1">Title</label>
-                    <Input
-                      id="new-title"
-                      name="title"
-                      value={newProduct.title ?? ''}
-                      onChange={handleNewProductChange}
-                      placeholder="Product title"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-image" className="block text-sm font-medium mb-1">Image URL</label>
-                    <Input
-                      id="new-image"
-                      name="image"
-                      value={newProduct.image ?? ''}
-                      onChange={handleNewProductChange}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-price" className="block text-sm font-medium mb-1">Price</label>
-                    <Input
-                      id="new-price"
-                      name="price"
-                      value={newProduct.price ?? ''}
-                      onChange={handleNewProductChange}
-                      placeholder="100"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-unit" className="block text-sm font-medium mb-1">Unit</label>
-                    <Input
-                      id="new-unit"
-                      name="unit"
-                      value={newProduct.unit ?? ''}
-                      onChange={handleNewProductChange}
-                      placeholder="1 L, 500g, etc."
-                    />
+    {/* Stock Alerts Section - Moved to top for better visibility */}
+    {lowStockProducts.length > 0 && (
+      <div className="mb-6 p-4 bg-gradient-to-r from-yellow-100 to-orange-200 border border-black rounded-lg shadow-sm">
+        <h3 className="text-lg font-semibold mb-3 flex items-center text-yellow-800">
+          <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
+          Stock Alerts ({lowStockProducts.length} items need attention)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 ">
+          {lowStockProducts.map(product => (
+            <div key={product.id} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border  border-yellow-700 ">
+              <div className="flex items-center gap-3">
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="w-10 h-10 object-cover rounded-md"
+                />
+                <div>
+                  <span className="font-medium text-gray-900 text-sm">{product.title}</span>
+                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}> {product.unit} </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
+                    
+                     {product.stock_quantity} Unit
+                    </span>
                   </div>
                 </div>
-
-                {/* Stock Management Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-blue-50 rounded-lg">
-                  <div>
-                    <label htmlFor="new-stock-quantity" className="block text-sm font-medium mb-1">Initial Stock Quantity</label>
-                    <Input
-                      id="new-stock-quantity"
-                      name="stock_quantity"
-                      type="number"
-                      min="0"
-                      value={newProduct.stock_quantity ?? 0}
-                      onChange={handleNewProductChange}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-min-stock" className="block text-sm font-medium mb-1">Minimum Stock Level</label>
-                    <Input
-                      id="new-min-stock"
-                      name="min_stock_level"
-                      type="number"
-                      min="0"
-                      value={newProduct.min_stock_level ?? 10}
-                      onChange={handleNewProductChange}
-                      placeholder="10"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-max-stock" className="block text-sm font-medium mb-1">Maximum Stock Level</label>
-                    <Input
-                      id="new-max-stock"
-                      name="max_stock_level"
-                      type="number"
-                      min="0"
-                      value={newProduct.max_stock_level ?? 100}
-                      onChange={handleNewProductChange}
-                      placeholder="100"
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="new-description" className="block text-sm font-medium mb-1">Short Description</label>
-                  <Textarea
-                    id="new-description"
-                    name="description"
-                    value={newProduct.description ?? ''}
-                    onChange={handleNewProductChange}
-                    placeholder="Brief description for product card"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="new-full-description" className="block text-sm font-medium mb-1">Full Description</label>
-                  <Textarea
-                    id="new-full-description"
-                    name="full_description"
-                    value={newProduct.full_description ?? ''}
-                    onChange={handleNewProductChange}
-                    placeholder="Detailed description for product page"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="new-ingredients" className="block text-sm font-medium mb-1">Ingredients</label>
-                  <Textarea
-                    id="new-ingredients"
-                    name="ingredients"
-                    value={newProduct.ingredients ?? ''}
-                    onChange={handleNewProductChange}
-                    placeholder="List of ingredients"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label htmlFor="new-usage" className="block text-sm font-medium mb-1">Usage Instructions</label>
-                  <Textarea
-                    id="new-usage"
-                    name="usage_instructions"
-                    value={newProduct.usage_instructions ?? ''}
-                    onChange={handleNewProductChange}
-                    placeholder="How to use this product"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleSaveNew}
-                    disabled={createProduct.isPending}
-                  >
-                    <SaveIcon className="w-4 h-4 mr-2" />
-                    {createProduct.isPending ? 'Saving...' : 'Save Product'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleCancelNew}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {productsLoading ? (
-              <div className="text-center py-8">Loading products...</div>
-            ) : productsError ? (
-              <div className="text-center py-8 text-red-600">
-                Error loading products: {productsError.message}
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {editingProduct?.id === product.id ? (
-                          <Input
-                            name="title"
-                            value={editingProduct.title}
-                            onChange={handleEditChange}
-                            className="w-full"
-                          />
-                        ) : (
+              <Button
+                size="sm"
+                onClick={() => handleStockUpdate(product)}
+                className="bg-blue-500 hover:bg-blue-600 text-white border border-black rounded-lg p-4 shadow-sm "
+              >
+                <Package className="w-4 h-4 mr-1" />
+                Restock
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {isAddingNew && (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 p-6 border border-gray-900 rounded-lg bg-gray-300"
+      >
+        <h3 className="text-lg font-medium mb-4 text-gray-800">Add New Product</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 border-b border-gray-900 pb-4">
+          <div>
+            <label htmlFor="new-title" className="block text-sm font-medium mb-1 text-gray-700">Title *</label>
+            <Input
+              id="new-title"
+              name="title"
+              value={newProduct.title ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="Product title"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-image" className="block text-sm font-medium mb-1 text-gray-700">Image URL</label>
+            <Input
+              id="new-image"
+              name="image"
+              value={newProduct.image ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="https://example.com/image.jpg"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-price" className="block text-m font-medium mb-1 text-black">Price (₹) *</label>
+            <Input
+              id="new-price"
+              name="price"
+              value={newProduct.price ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="100"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-unit" className="block text-sm font-medium mb-1 text-gray-700">Unit *</label>
+            <Input
+              id="new-unit"
+              name="unit"
+              value={newProduct.unit ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="1 L, 500g, etc."
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Stock Management Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div>
+            <label htmlFor="new-stock-quantity" className="block text-sm font-medium mb-1 text-blue-800">Initial Stock Quantity</label>
+            <Input
+              id="new-stock-quantity"
+              name="stock_quantity"
+              type="number"
+              min="0"
+              value={newProduct.stock_quantity ?? 0}
+              onChange={handleNewProductChange}
+              placeholder="0"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-min-stock" className="block text-sm font-medium mb-1 text-blue-800">Minimum Stock Level</label>
+            <Input
+              id="new-min-stock"
+              name="min_stock_level"
+              type="number"
+              min="0"
+              value={newProduct.min_stock_level ?? 10}
+              onChange={handleNewProductChange}
+              placeholder="10"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-max-stock" className="block text-sm font-medium mb-1 text-blue-800">Maximum Stock Level</label>
+            <Input
+              id="new-max-stock"
+              name="max_stock_level"
+              type="number"
+              min="0"
+              value={newProduct.max_stock_level ?? 100}
+              onChange={handleNewProductChange}
+              placeholder="100"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="new-description" className="block text-sm font-medium mb-1 text-gray-700">Short Description</label>
+          <Textarea
+            id="new-description"
+            name="description"
+            value={newProduct.description ?? ''}
+            onChange={handleNewProductChange}
+            placeholder="Brief description for product card"
+            rows={2}
+            className="focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="new-full-description" className="block text-sm font-medium mb-1 text-gray-700">Full Description</label>
+          <Textarea
+            id="new-full-description"
+            name="full_description"
+            value={newProduct.full_description ?? ''}
+            onChange={handleNewProductChange}
+            placeholder="Detailed description for product page"
+            rows={3}
+            className="focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="new-ingredients" className="block text-sm font-medium mb-1 text-gray-700">Ingredients</label>
+            <Textarea
+              id="new-ingredients"
+              name="ingredients"
+              value={newProduct.ingredients ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="List of ingredients"
+              rows={2}
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-usage" className="block text-sm font-medium mb-1 text-gray-700">Usage Instructions</label>
+            <Textarea
+              id="new-usage"
+              name="usage_instructions"
+              value={newProduct.usage_instructions ?? ''}
+              onChange={handleNewProductChange}
+              placeholder="How to use this product"
+              rows={2}
+              className="focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <Button
+            onClick={handleSaveNew}
+            disabled={createProduct.isPending}
+            className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+          >
+            <SaveIcon className="w-4 h-4 mr-2" />
+            {createProduct.isPending ? 'Saving...' : 'Save Product'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancelNew}
+            className="border-gray-300 hover:bg-gray-50"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
+      </motion.div>
+    )}
+
+    {productsLoading ? (
+      <div className="text-center py-12">
+        <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-blue-500 bg-blue-100 transition ease-in-out duration-150">
+          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading products...
+        </div>
+      </div>
+    ) : productsError ? (
+      <div className="text-center py-12">
+        <div className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-4 inline-block">
+          <AlertTriangle className="w-5 h-5 mx-auto mb-2" />
+          Error loading products: {productsError.message}
+        </div>
+      </div>
+    ) : (
+      <div className="overflow-hidden rounded-lg border border-gray-900 shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-400 hover:bg-gray-500 transition-colors">
+              <TableHead className="font-bold  text-black">Product</TableHead>
+              <TableHead className="font-bold text-black">Price & Quantity</TableHead>
+              <TableHead className="font-bold text-black text-center">Stock Management</TableHead>
+              <TableHead className="font-bold text-black text-center">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {products.map((product, index) => (
+              // <TableRow key={product.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
+              <TableRow
+  key={product.id}
+  className={`${
+    index % 2 === 0 ? 'bg-white' : 'hover:bg-gray-500'
+  } hover:bg-blue-50 transition-colors border border-gray-900 rounded-md shadow-sm`}
+>
+
+              <TableCell className="py-4">
+                  <div className="flex items-start  gap-4">
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="w-16 h-16 object-cover rounded-lg shadow-m"
+                    />
+                    <div className="flex-1 min-w-0">
+                      {editingProduct?.id === product.id ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <div className="font-medium">{product.title}</div>
-                            <div className="text-sm text-gray-500">{product.description}</div>
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Title *</label>
+                            <Input
+                              name="title"
+                              value={editingProduct.title}
+                              onChange={handleEditChange}
+                              className="font-medium focus:ring-2 focus:ring-blue-500"
+                              placeholder="Product title"
+                            />
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingProduct?.id === product.id ? (
-                          <Input
-                            name="price"
-                            value={editingProduct.price}
-                            onChange={handleEditChange}
-                            className="w-20"
-                          />
-                        ) : (
-                          `₹${product.price}`
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingProduct?.id === product.id ? (
-                          <Input
-                            name="unit"
-                            value={editingProduct.unit}
-                            onChange={handleEditChange}
-                            className="w-20"
-                          />
-                        ) : (
-                          product.unit
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingProduct?.id === product.id ? (
-                          <div className="space-y-2">
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Image URL</label>
+                            <Input
+                              name="image"
+                              value={editingProduct.image}
+                              onChange={handleEditChange}
+                              placeholder="https://example.com/image.jpg"
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-m font-medium mb-1 text-gray-700">Price (₹) *</label>
+                            <Input
+                              name="price"
+                              value={editingProduct.price}
+                              onChange={handleEditChange}
+                              placeholder="100"
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Unit *</label>
+                            <Input
+                              name="unit"
+                              value={editingProduct.unit}
+                              onChange={handleEditChange}
+                              placeholder="1 L, 500g, etc."
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Short Description</label>
+                            <Textarea
+                              name="description"
+                              value={editingProduct.description || ''}
+                              onChange={handleEditChange}
+                              placeholder="Brief description for product card"
+                              rows={2}
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Full Description</label>
+                            <Textarea
+                              name="full_description"
+                              value={editingProduct.full_description || ''}
+                              onChange={handleEditChange}
+                              placeholder="Detailed description for product page"
+                              rows={3}
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Ingredients</label>
+                            <Textarea
+                              name="ingredients"
+                              value={editingProduct.ingredients || ''}
+                              onChange={handleEditChange}
+                              placeholder="List of ingredients"
+                              rows={2}
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-gray-700">Usage Instructions</label>
+                            <Textarea
+                              name="usage_instructions"
+                              value={editingProduct.usage_instructions || ''}
+                              onChange={handleEditChange}
+                              placeholder="How to use this product"
+                              rows={2}
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-blue-800">Stock Quantity</label>
                             <Input
                               name="stock_quantity"
                               type="number"
                               min="0"
                               value={editingProduct.stock_quantity}
                               onChange={handleEditChange}
-                              className="w-20"
+                              placeholder="0"
+                              className="focus:ring-2 focus:ring-blue-500"
                             />
-                            <div className="text-xs text-gray-500">
-                              Min: {editingProduct.min_stock_level} | Max: {editingProduct.max_stock_level}
-                            </div>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{product.stock_quantity}</span>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-blue-800">Min Stock Level</label>
+                            <Input
+                              name="min_stock_level"
+                              type="number"
+                              min="0"
+                              value={editingProduct.min_stock_level}
+                              onChange={handleEditChange}
+                              placeholder="10"
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1 text-blue-800">Max Stock Level</label>
+                            <Input
+                              name="max_stock_level"
+                              type="number"
+                              min="0"
+                              value={editingProduct.max_stock_level}
+                              onChange={handleEditChange}
+                              placeholder="100"
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <h3 className="font-bold text-gray-900 mb-1">{product.title}</h3>
+                                  <div className="text-xs text-black-500">{product.unit} </div> 
+                         
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
+                              {product.stock_status === 'in_stock' ? '✓ In Stock' :
+                                product.stock_status === 'low_stock' ? '⚠ Low Stock' : '✗ Out of Stock'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+
+                <TableCell className="py-4">
+                  {editingProduct?.id === product.id ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-black ">₹</span>
+                        <Input
+                          name="price"
+                          value={editingProduct.price}
+                          onChange={handleEditChange}
+                          className="w-20t focus:ring-2 focus:ring-blue-500"
+                          placeholder="Price"
+                        />
+                      </div>
+                      <Input
+                        name="unit"
+                        value={editingProduct.unit}
+                        onChange={handleEditChange}
+                        className="w-24 focus:ring-2 focus:ring-blue-500"
+                        placeholder="Unit"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="font-semibold text-gray-900">₹{product.price}</div>
+                      <div className="text-sm text-gray-600">{product.unit} available</div>
+                    </div>
+                  )}
+                </TableCell>
+
+                <TableCell className="py-4">
+                  <div className="text-center">
+                    {editingProduct?.id === product.id ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-sm text-gray-600">Qty:</span>
+                          <Input
+                            name="stock_quantity"
+                            type="number"
+                            min="0"
+                            value={editingProduct.stock_quantity}
+                            onChange={handleEditChange}
+                            className="w-20 text-center focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Min: {editingProduct.min_stock_level} | Max: {editingProduct.max_stock_level}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">{product.stock_quantity}</div>
+                            <div className="text-xs text-gray-500">{product.unit} </div>
+                            
+                          </div>
+                          <div className="flex flex-col gap-1">
+                             <Button
+                              size="sm"
+                      onClick={() => handleStockSave('add10', product)}
+                          className="bg-green-500 hover:bg-green-600 text-white h-8 px-2"
+                     title="Add 10 Instantly"
+                            >
+                          <Plus className="w-3 h-3" />
+                      <div>Add 10</div>
+                        </Button>
+
+
                             <Button
                               size="sm"
-                              variant="outline"
                               onClick={() => handleStockUpdate(product)}
+                              className="bg-blue-400 hover:bg-blue-500 border-black h-8 px-2 text-black"
+                               title="Modify Stock"
                             >
-                              <Package className="w-3 h-3" />
+                           
+                                  <div>Modify</div>
                             </Button>
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStockStatusColor(product.stock_status)}`}>
-                          {product.stock_status === 'in_stock' ? 'In Stock' :
-                            product.stock_status === 'low_stock' ? 'Low Stock' : 'Out of Stock'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {editingProduct?.id === product.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={handleSaveEdit}
-                                disabled={updateProduct.isPending}
-                              >
-                                <SaveIcon className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(product)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(product.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </TabsContent>
+                        <div className="text-xs text-gray-500">
+                          Min: {product.min_stock_level} | Max: {product.max_stock_level}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+
+                <TableCell className="py-4">
+        <div className="flex flex-col items-center gap-2">
+
+            
+                    {editingProduct?.id === product.id ? (
+                      <>
+                        <Button
+                        
+                          size="sm"
+                          onClick={handleSaveEdit}
+                          disabled={updateProduct.isPending}
+                          className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                        >
+                           <div>Save Changes</div>
+                          <SaveIcon className="w-4 h-4" />
+                 
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEdit}
+                          className="border-gray-300 bg-red-400 hover:bg-red-500"
+                        > <div  >Cancel</div>
+                          <X className="w-4 h-4" />
+                      
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(product)}
+                          className="border-blue-900 text-blue-600 bg-slate-300 hover:bg-blue-500"
+                        >
+                          <Pencil className="w-4 h-4" />
+                           <div>Modify Product</div>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(product.id)}
+                          className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <div>Delete Product</div>
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </div>
+</TabsContent>
 
         <TabsContent value="orders">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-semibold mb-6">Order Management</h2>
+          <div className="bg-white border border-black rounded-lg shadow p-6">
+  <h2 className="text-2xl font-semibold mb-6">Order Management</h2>
+
 
             {ordersLoading ? (
               <div className="text-center py-8">Loading orders...</div>
@@ -976,22 +1198,30 @@ const Admin: React.FC = () => {
             ) : orders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No orders found</div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 bg-gray-300 border border-black rounded-lg shadow p-6 ">
                 {orders.map((order) => (
-                  <motion.div
-                    key={order.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border rounded-lg p-4"
-                  >
+               <motion.div
+  key={order.id}
+  initial={{ opacity: 1, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className={`border-l-4 rounded-lg p-4 transition-all duration-300 shadow-md cursor-pointer ${
+    expandedOrderId === order.id
+      ? ' text-black bg-blue-200 border-blue-200'
+      : 'bg-white border-gray-200 hover:bg-gray-200 hover:border-blue-400'
+  }`}
+  onClick={() => toggleOrderExpansion(order.id)}
+>
+
                     <div
                       className="flex justify-between items-center cursor-pointer"
                       onClick={() => toggleOrderExpansion(order.id)}
                     >
+                      
                       <div className="flex items-center space-x-4">
+                    
                         <div>
                           <h3 className="font-medium">Order #{order.order_number || order.id.slice(0, 8)}</h3>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-black">
                             {order.profiles?.name || order.customer_name || 'Unknown Customer'}
                           </p>
                           <p className="text-sm text-gray-500">
@@ -1016,7 +1246,11 @@ const Admin: React.FC = () => {
                         ) : (
                           <ChevronDown className="w-5 h-5" />
                         )}
+                     <span className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium cursor-pointer hover:bg-blue-600 transition">
+                           View Details</span>
+
                       </div>
+                    
                     </div>
 
                     {expandedOrderId === order.id && (
@@ -1102,7 +1336,7 @@ const Admin: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="users">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white border border-gray-500 rounded-lg p-4 bg-white shadow-sm">
             <h2 className="text-2xl font-semibold mb-6">User Management</h2>
 
             {profilesLoading ? (
@@ -1151,8 +1385,8 @@ const Admin: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">
               Update Stock for {stockUpdateProduct.title}
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Current Stock: {stockUpdateProduct.stock_quantity} {stockUpdateProduct.unit}
+            <p className="text-m  text-black-600 mb-4">
+              Current Stock: {stockUpdateProduct.stock_quantity} : {stockUpdateProduct.unit}
             </p>
 
             <div className="space-y-4">
@@ -1178,20 +1412,14 @@ const Admin: React.FC = () => {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => handleStockSave('subtract')}
+                
+                  onClick={() => handleStockSave('set')}
                   disabled={updateStock.isPending}
                   className="bg-red-600 hover:bg-red-700"
                 >
-                  Remove Stock
+                  Out of Stock
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleStockSave('set')}
-                  disabled={updateStock.isPending}
-                  variant="outline"
-                >
-                  Set Exact
-                </Button>
+               
                 <Button
                   size="sm"
                   onClick={() => handleStockSave('add10')}
