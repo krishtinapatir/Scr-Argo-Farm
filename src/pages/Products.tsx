@@ -1,4 +1,3 @@
-
 import ProductCard from '@/components/ProductCard';
 import SearchBar from '@/components/SearchBar';
 import { useQuery } from '@tanstack/react-query';
@@ -7,14 +6,17 @@ import { useEffect, useState } from 'react';
 import sahiwal from "../../public/sahiwal.png";
 import { supabase } from '../integrations/supabase/client';
 
-// Updated Product interface to include stock fields
+// Updated Product interface to match Admin component exactly
 interface Product {
   id: string;
   title: string;
   image: string;
-  price: number;
+  price: number | string; // Allow both number and string to handle parsing
   unit: string;
   description: string;
+  full_description?: string;
+  ingredients?: string;
+  usage_instructions?: string;
   stock_quantity: number;
   min_stock_level: number;
   max_stock_level: number;
@@ -25,17 +27,27 @@ interface Product {
 const Products = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
-  // Fetch products from Supabase with stock information
+  // Fetch products from Supabase with stock information - updated to match Admin query
   const { data: products, isLoading, error } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, stock_quantity, min_stock_level, max_stock_level')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Product[];
+      
+      // Ensure all required fields are present with defaults
+      return (data || []).map(product => ({
+        ...product,
+        stock_quantity: product.stock_quantity ?? 0,
+        min_stock_level: product.min_stock_level ?? 10,
+        max_stock_level: product.max_stock_level ?? 100,
+        full_description: product.full_description || '',
+        ingredients: product.ingredients || '',
+        usage_instructions: product.usage_instructions || ''
+      })) as Product[];
     },
   });
 
@@ -69,14 +81,28 @@ const Products = () => {
     setFilteredProducts(filtered);
   };
 
-  // Helper function to determine stock status
-  const getStockStatus = (product: Product) => {
+  // Helper function to determine stock status - matches Admin component logic
+  const getStockStatus = (product: Product): 'OUT_OF_STOCK' | 'LOW_STOCK' | 'IN_STOCK' => {
     if (product.stock_quantity === 0) {
-      return { status: 'OUT_OF_STOCK', label: 'Out of Stock', color: 'text-red-600' };
+      return 'OUT_OF_STOCK';
     } else if (product.stock_quantity <= product.min_stock_level) {
-      return { status: 'LOW_STOCK', label: 'Low Stock', color: 'text-yellow-600' };
+      return 'LOW_STOCK';
     } else {
-      return { status: 'IN_STOCK', label: 'In Stock', color: 'text-green-600' };
+      return 'IN_STOCK';
+    }
+  };
+
+  // Helper function to get stock status display
+  const getStockStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'OUT_OF_STOCK':
+        return { label: 'Out of Stock', color: 'text-red-600 bg-red-50' };
+      case 'LOW_STOCK':
+        return { label: 'Low Stock', color: 'text-yellow-600 bg-yellow-50' };
+      case 'IN_STOCK':
+        return { label: 'In Stock', color: 'text-green-600 bg-green-50' };
+      default:
+        return { label: 'Unknown', color: 'text-gray-600 bg-gray-50' };
     }
   };
 
@@ -115,18 +141,23 @@ const Products = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => {
-                  const stockInfo = getStockStatus(product);
+                  const stockStatus = getStockStatus(product);
+                  const stockDisplay = getStockStatusDisplay(stockStatus);
+                  
                   return (
                     <ProductCard
                       key={product.id}
                       id={product.id}
                       title={product.title}
                       image={product.image}
-                      price={product.price.toString()}
+                      price={typeof product.price === "number" ? product.price.toString() : product.price.toString()}
                       unit={product.unit}
                       description={product.description}
                       stockQuantity={product.stock_quantity}
-                      stockStatus={stockInfo.status}
+                      stockStatus={stockStatus}
+                      // Add additional stock info for better display
+                      minStockLevel={product.min_stock_level}
+                      maxStockLevel={product.max_stock_level}
                     />
                   );
                 })}
@@ -136,7 +167,7 @@ const Products = () => {
         </div>
       </section>
 
-      {/* Stock Summary Section */}
+      {/* Stock Summary Section - Updated to match Admin logic */}
       <section className="py-8 bg-gray-50">
         <div className="section-container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -147,6 +178,9 @@ const Products = () => {
                   <h3 className="font-semibold text-green-700">In Stock</h3>
                   <p className="text-2xl font-bold text-green-800">
                     {products?.filter(p => p.stock_quantity > p.min_stock_level).length || 0}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Products available
                   </p>
                 </div>
               </div>
@@ -160,6 +194,9 @@ const Products = () => {
                   <p className="text-2xl font-bold text-yellow-800">
                     {products?.filter(p => p.stock_quantity > 0 && p.stock_quantity <= p.min_stock_level).length || 0}
                   </p>
+                  <p className="text-sm text-gray-600">
+                    Products running low
+                  </p>
                 </div>
               </div>
             </div>
@@ -172,10 +209,34 @@ const Products = () => {
                   <p className="text-2xl font-bold text-red-800">
                     {products?.filter(p => p.stock_quantity === 0).length || 0}
                   </p>
+                  <p className="text-sm text-gray-600">
+                    Products unavailable
+                  </p>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Stock Alert for customers */}
+          {products && products.some(p => p.stock_quantity <= p.min_stock_level) && (
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Limited Stock Alert
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>Some products are running low on stock. Order now to avoid disappointment!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
