@@ -94,6 +94,9 @@ const Admin: React.FC = () => {
   const [newProduct, setNewProduct] = useState<Partial<ProductWithStock>>({
     title: '', image: '', price: '', unit: '', description: '', full_description: '', ingredients: '', usage_instructions: '', stock_quantity: 0, min_stock_level: 10, max_stock_level: 100
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+const [sortBy, setSortBy] = useState('date_desc');
 
   // Fetch products with stock information
   const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery<ProductWithStock[]>({
@@ -130,6 +133,7 @@ const handleConfirmDelete = () => {
     setProductToDelete(null);
   }
 };
+
 
   // Fetch orders with proper error handling
   const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
@@ -216,6 +220,15 @@ const handleConfirmDelete = () => {
       return data as Profile[];
     },
   });
+ const filteredProfiles = useMemo(() => {
+    if (!profiles || profiles.length === 0) return [];
+    
+    return profiles.filter(profile => 
+      profile.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [profiles, searchTerm]);
 
   // Create product mutation with stock
   const createProduct = useMutation({
@@ -548,6 +561,46 @@ const handleConfirmDelete = () => {
     return { totalOrders, totalRevenue, averageOrderValue, statusCounts };
   };
 
+
+  // ...existing code above...
+
+const filteredOrders = useMemo(() => {
+  let filtered = orders;
+
+  // Filter by status
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(order => order.status === statusFilter);
+  }
+
+  // Filter by search term (order number, customer name, email, phone)
+  if (searchTerm.trim() !== '') {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(order =>
+      (order.order_number && order.order_number.toLowerCase().includes(term)) ||
+      (order.profiles?.name && order.profiles.name.toLowerCase().includes(term)) ||
+      (order.customer_name && order.customer_name.toLowerCase().includes(term)) ||
+      (order.profiles?.email && order.profiles.email.toLowerCase().includes(term)) ||
+      (order.customer_email && order.customer_email.toLowerCase().includes(term)) ||
+      (order.customer_phone && order.customer_phone.toLowerCase().includes(term))
+    );
+  }
+
+  // Sort
+  if (sortBy === 'date_desc') {
+    filtered = filtered.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else if (sortBy === 'date_asc') {
+    filtered = filtered.slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  } else if (sortBy === 'amount_desc') {
+    filtered = filtered.slice().sort((a, b) => (b.total || 0) - (a.total || 0));
+  } else if (sortBy === 'amount_asc') {
+    filtered = filtered.slice().sort((a, b) => (a.total || 0) - (b.total || 0));
+  }
+
+  return filtered;
+}, [orders, statusFilter, searchTerm, sortBy]);
+
+
+
   // Sales analytics component
   const SalesAnalytics = ({ orders }: { orders: Order[] }) => {
     const salesData = calculateSalesData(orders);
@@ -580,51 +633,51 @@ const handleConfirmDelete = () => {
     };
 
     return (
-     <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
   {/* Sales Overview */}
-  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+  <div className="bg-white p-4 sm:p-6 rounded-lg shadow hover:shadow-md transition duration-300">
     <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="p-3 sm:p-4  rounded-lg bg-blue-100  border border-blue-300 hover:bg-blue-200 transition">
         <h4 className="text-sm font-medium text-blue-600">Total Orders</h4>
-        <p className="text-2xl font-bold">{orderStats.totalOrders}</p>
+        <p className="text-xl sm:text-2xl font-bold">{orderStats.totalOrders}</p>
       </div>
-      <div className="p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+      <div className="p-3 sm:p-4 bg-green-100 border border-green-300 rounded-lg hover:bg-green-200 transition">
         <h4 className="text-sm font-medium text-green-600">Total Revenue</h4>
-        <p className="text-2xl font-bold">₹{orderStats.totalRevenue.toFixed(2)}</p>
+        <p className="text-xl sm:text-2xl font-bold">₹{orderStats.totalRevenue.toFixed(2)}</p>
       </div>
-      <div className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+      <div className="p-3 sm:p-4 bg-purple-100 border border-purple-300 rounded-lg hover:bg-purple-200 transition sm:col-span-2 lg:col-span-1">
         <h4 className="text-sm font-medium text-purple-600">Average Order Value</h4>
-        <p className="text-2xl font-bold">₹{orderStats.averageOrderValue.toFixed(2)}</p>
+        <p className="text-xl sm:text-2xl font-bold">₹{orderStats.averageOrderValue.toFixed(2)}</p>
       </div>
     </div>
   </div>
-
+  
   {/* Sales Trend */}
-  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+  <div className="bg-white p-4 sm:p-6 rounded-lg shadow hover:shadow-md transition duration-300">
     <h3 className="text-lg font-semibold mb-4">Sales Trend</h3>
-    <div className="h-[400px]">
+    <div className="h-[250px] sm:h-[300px] lg:h-[400px] overflow-hidden">
       <Line data={lineChartData} options={lineChartOptions} />
     </div>
   </div>
-
+  
   {/* Order Status Distribution */}
-  <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition duration-300">
+  <div className="bg-white p-4 sm:p-6 rounded-lg shadow hover:shadow-md transition duration-300">
     <h3 className="text-lg font-semibold mb-4">Order Status Distribution</h3>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 border border-blue-300 rounded-lg ">
       {Object.entries(orderStats.statusCounts).map(([status, count]) => (
         <div
-          key={status}
-          className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 hover:scale-[1.02] transition transform duration-200 ease-in-out"
+          key={status} 
+          className="p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 hover:scale-[1.02] transition transform duration-200 ease-in-out"
         >
-          <h4 className="text-sm font-medium text-gray-600">{status}</h4>
-          <p className="text-xl font-bold">{count}</p>
+          
+          <h4 className="text-sm font-medium text-gray-600 capitalize"> {status} payment  </h4>
+          <p className="text-lg sm:text-xl font-bold">{count}</p> 
         </div>
       ))}
     </div>
   </div>
 </div>
-
     );
   };
 
@@ -633,12 +686,23 @@ const handleConfirmDelete = () => {
       <h1 className="text-3xl mt-9 font-bold mb-8">Admin Dashboard</h1>
 
       <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-400 text-black" >
+        {/* <TabsList className="grid w-full grid-cols-4 bg-gray-400 text-black" >
           <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
+           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="users">Active Users</TabsTrigger>
-          <TabsTrigger value="analytics">Sale Analytics</TabsTrigger>
-        </TabsList>
+          <TabsTrigger value="analytics">Sale Analytics</TabsTrigger>  
+        </TabsList>*/}
+<TabsList className="grid w-full grid-cols-4 bg-gray-400 text-black text-xs sm:text-sm md:text-base gap-0.5 sm:gap-1 p-1" > 
+  <TabsTrigger value="products"className="px-1 py-2 sm:px-1.3 sm:py-1.8 text-xs sm:text-sm font-medium truncate min-w-0"> Products </TabsTrigger> 
+  <TabsTrigger  value="orders" className="px-1 py-2 sm:px-1.5 sm:py-1.8 text-xs sm:text-sm font-medium truncate min-w-0"> Orders</TabsTrigger> 
+  <TabsTrigger value="users" className="px-1 py-2 sm:px-1.5 sm:py-1.8 text-xs sm:text-sm font-medium truncate min-w-0"> <span className="hidden sm:inline">Active Users</span>
+    <span className="sm:hidden">Users</span>
+  </TabsTrigger> 
+  <TabsTrigger value="analytics" className="px-1 py-2 sm:px-1.5 sm:py-1.8 text-xs sm:text-sm font-medium truncate min-w-0"><span className="hidden sm:inline">Sale Analytics</span>
+    <span className="sm:hidden">Analytics</span>
+  </TabsTrigger> 
+</TabsList>
+
 
 
         <TabsContent value="products">
@@ -1206,6 +1270,9 @@ const handleConfirmDelete = () => {
     )}
   </div>
 </TabsContent>
+
+
+
 <ConfirmDialog
   open={confirmOpen}
   onOpenChange={setConfirmOpen}
@@ -1214,195 +1281,378 @@ const handleConfirmDelete = () => {
   description="Are you sure you want to delete this product? This action cannot be undone."
 />
 
+{/* <------------orders tab --------------> */}
         <TabsContent value="orders">
-          <div className="bg-white border border-black rounded-lg shadow p-6">
-  <h2 className="text-2xl font-semibold mb-6">Order Management</h2>
+  <div className="bg-white border border-black rounded-lg shadow p-3 sm:p-6">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
+      <h2 className="text-lg sm:text-2xl font-semibold">Order Management</h2>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <select
+          className="px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending Payemnt</option>
+          <option value="completed">Completed Payement</option>
+          <option value="cancelled">Cancelled Orders</option>
+        </select>
+        <select
+          className="px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="date_desc">Newest Order</option>
+          <option value="date_asc">Oldest Order</option>
+          <option value="amount_desc">Highest Price</option>
+          <option value="amount_asc">Lowest Price</option>
+        </select>
+      </div>
+    </div>
+ 
+    {/* Order Statistics */}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+      <div className="p-2 sm:p-4 bg-blue-100 border border-blue-600 rounded-lg hover:bg-blue-200 transition">
+        <h4 className="text-xs sm:text-sm font-medium text-blue-600">Total Orders</h4>
+        <p className="text-lg sm:text-2xl font-bold">{orderStats.totalOrders}</p>
+      </div>
+      <div className="p-2 sm:p-4 bg-green-100 border border-green-600 rounded-lg hover:bg-green-200 transition">
+        <h4 className="text-xs sm:text-sm font-medium text-green-600">Total Revenue</h4>
+        <p className="text-lg sm:text-2xl font-bold">₹{orderStats.totalRevenue.toFixed(2)}</p>
+      </div>
+      <div className="p-2 sm:p-4 bg-purple-200 border border-purple-600 rounded-lg hover:bg-purple-300 transition">
+        <h4 className="text-xs sm:text-sm font-medium text-purple-600">Avg Order</h4>
+        <p className="text-lg sm:text-2xl font-bold">₹{orderStats.averageOrderValue.toFixed(2)}</p>
+      </div>
+      <div className="p-2 sm:p-4 bg-orange-100 border border-orange-500 rounded-lg hover:bg-yellow-100 transition">
+        <h4 className="text-xs sm:text-sm font-bold text-orange-600">Status Count</h4>
+        <div className="text-xs sm:text-sm">
+          {Object.entries(orderStats.statusCounts).map(([status, count]) => (
+            <div key={status} className="flex justify-between">
+              <span className="capitalize">{status}: {count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
 
-
-            {ordersLoading ? (
-              <div className="text-center py-8">Loading orders...</div>
-            ) : ordersError ? (
-              <div className="text-center py-8 text-red-600">
-                Error loading orders: {ordersError.message}
+   {ordersLoading ? (
+  <div className="text-center py-8">Loading orders...</div>
+) : ordersError ? (
+  <div className="text-center py-8 text-red-600">
+    Error loading orders: {ordersError.message}
+  </div>
+) : filteredOrders.length === 0 ? (
+  <div className="text-center py-8 text-gray-500">No orders found</div>
+) : (
+  <div className="space-y-3 sm:space-y-4 bg-gray-300 border border-black rounded-lg shadow p-3 sm:p-6">
+    {filteredOrders.map((order) => (
+          <motion.div
+            key={order.id}
+            initial={{ opacity: 1, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`border-l-4 rounded-lg p-3 sm:p-4 transition-all duration-300 shadow-md cursor-pointer ${
+              expandedOrderId === order.id
+                ? ' text-black bg-blue-50 border-blue-200 '
+                : 'bg-white border-gray-200 hover:bg-gray-200 hover:border-pink-200'
+            }`}
+            onClick={() => toggleOrderExpansion(order.id)}>
+            
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              {/* Mobile: Stack vertically, Desktop: Side by side */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm sm:text-base truncate">
+                      Order #{order.order_number || order.id.slice(0, 8)}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-black truncate">
+                      {order.profiles?.name || order.customer_name || 'Unknown Customer'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  </div>
+                  
+                  {/* Price and Status */}
+                  <div className="flex flex-col items-end ml-2">
+                    <p className="font-medium text-sm">₹{order.total?.toFixed(2) || '0.00'}</p>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
               </div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No orders found</div>
-            ) : (
-              <div className="space-y-4 bg-gray-300 border border-black rounded-lg shadow p-6 ">
-                {orders.map((order) => (
-               <motion.div
-  key={order.id}
-  initial={{ opacity: 1, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  className={`border-l-4 rounded-lg p-4 transition-all duration-300 shadow-md cursor-pointer ${
-    expandedOrderId === order.id
-      ? ' text-black bg-blue-200 border-blue-200'
-      : 'bg-white border-gray-200 hover:bg-gray-200 hover:border-blue-400'
-  }`}
-  onClick={() => toggleOrderExpansion(order.id)}
->
+              
+              {/* Expand Indicator - Desktop only */}
+              <div className="hidden sm:flex items-center">
+                {expandedOrderId === order.id ? (
+                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
 
-                    <div
-                      className="flex justify-between items-center cursor-pointer"
-                      onClick={() => toggleOrderExpansion(order.id)}
-                    >
-                      
-                      <div className="flex items-center space-x-4">
-                    
-                        <div>
-                          <h3 className="font-medium">Order #{order.order_number || order.id.slice(0, 8)}</h3>
-                          <p className="text-sm text-black">
-                            {order.profiles?.name || order.customer_name || 'Unknown Customer'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="font-medium">₹{order.total?.toFixed(2) || '0.00'}</p>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        {expandedOrderId === order.id ? (
-                          <ChevronUp className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
-                     <span className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium cursor-pointer hover:bg-blue-600 transition">
-                           View Details</span>
+            {/* Mobile Expand Indicator */}
+            <div className="flex justify-center sm:hidden mt-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-1 text-blue-600">
+                {expandedOrderId === order.id ? (
+                  <>
+                    <span className="text-xs">Hide Details</span>
+                    <ChevronUp className="w-3 h-3" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs">Tap to view details</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </>
+                )}
+              </div>
+            </div>
 
+            {expandedOrderId === order.id && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t"
+              >
+                <div className="grid grid-cols-1 gap-4 mb-4">
+                  {/* Mobile: Stack all info vertically */}
+                  <div className="space-y-3 sm:hidden">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="font-medium mb-2 text-sm">Customer Info</h4>
+                      <div className="space-y-1">
+                        <p className="text-xs"><strong>Name:</strong> {order.profiles?.name || order.customer_name || 'N/A'}</p>
+                        <p className="text-xs"><strong>Email:</strong> {order.profiles?.email || order.customer_email || 'N/A'}</p>
+                        <p className="text-xs"><strong>Phone:</strong> {order.customer_phone || 'N/A'}</p>
                       </div>
-                    
                     </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="font-medium mb-2 text-sm">Delivery Info</h4>
+                      <div className="space-y-1">
+                        <p className="text-xs"><strong>Address:</strong> {order.delivery_address || 'N/A'}</p>
+                        <p className="text-xs"><strong>City:</strong> {order.delivery_city || 'N/A'}</p>
+                        <p className="text-xs"><strong>State:</strong> {order.delivery_state || 'N/A'}</p>
+                        <p className="text-xs"><strong>ZIP:</strong> {order.delivery_zip_code || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop: Two column layout */}
+                  <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Customer Information</h4>
+                      <p className="text-sm"><strong>Name:</strong> {order.profiles?.name || order.customer_name || 'N/A'}</p>
+                      <p className="text-sm"><strong>Email:</strong> {order.profiles?.email || order.customer_email || 'N/A'}</p>
+                      <p className="text-sm"><strong>Phone:</strong> {order.customer_phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Delivery Information</h4>
+                      <p className="text-sm"><strong>Address:</strong> {order.delivery_address || 'N/A'}</p>
+                      <p className="text-sm"><strong>City:</strong> {order.delivery_city || 'N/A'}</p>
+                      <p className="text-sm"><strong>State:</strong> {order.delivery_state || 'N/A'}</p>
+                      <p className="text-sm"><strong>ZIP:</strong> {order.delivery_zip_code || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
 
-                    {expandedOrderId === order.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="mt-4 pt-4 border-t"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <h4 className="font-medium mb-2">Customer Information</h4>
-                            <p className="text-sm"><strong>Name:</strong> {order.profiles?.name || order.customer_name || 'N/A'}</p>
-                            <p className="text-sm"><strong>Email:</strong> {order.profiles?.email || order.customer_email || 'N/A'}</p>
-                            <p className="text-sm"><strong>Phone:</strong> {order.customer_phone || 'N/A'}</p>
+                <div>
+                  <h4 className="font-medium mb-2 text-sm sm:text-base">Order Items</h4>
+                  {order.order_items && order.order_items.length > 0 ? (
+                    <div className="space-y-2">
+                      {order.order_items.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center p-2 sm:p-3 bg-gray-50 rounded">
+                          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                            {item.products?.image && (
+                              <img
+                                src={item.products.image}
+                                alt={item.products.title}
+                                className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded flex-shrink-0"
+                              />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-xs sm:text-sm truncate">{item.products?.title || 'Unknown Product'}</p>
+                              <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-medium mb-2">Delivery Information</h4>
-                            <p className="text-sm"><strong>Address:</strong> {order.delivery_address || 'N/A'}</p>
-                            <p className="text-sm"><strong>City:</strong> {order.delivery_city || 'N/A'}</p>
-                            <p className="text-sm"><strong>State:</strong> {order.delivery_state || 'N/A'}</p>
-                            <p className="text-sm"><strong>ZIP:</strong> {order.delivery_zip_code || 'N/A'}</p>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <p className="font-medium text-xs sm:text-sm">₹{item.price?.toFixed(2) || '0.00'}</p>
+                            <p className="text-xs text-gray-500">
+                              Total: ₹{((item.price || 0) * item.quantity).toFixed(2)}
+                            </p>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-xs sm:text-sm">No items found for this order</p>
+                  )}
+                </div>
 
-                        <div>
-                          <h4 className="font-medium mb-2">Order Items</h4>
-                          {order.order_items && order.order_items.length > 0 ? (
-                            <div className="space-y-2">
-                              {order.order_items.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                  <div className="flex items-center space-x-3">
-                                    {item.products?.image && (
-                                      <img
-                                        src={item.products.image}
-                                        alt={item.products.title}
-                                        className="w-10 h-10 object-cover rounded"
-                                      />
-                                    )}
-                                    <div>
-                                      <p className="font-medium">{item.products?.title || 'Unknown Product'}</p>
-                                      <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-medium">₹{item.price?.toFixed(2) || '0.00'}</p>
-                                    <p className="text-sm text-gray-500">
-                                      Total: ₹{((item.price || 0) * item.quantity).toFixed(2)}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 text-sm">No items found for this order</p>
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <div className="space-y-1">
+                      <p className="text-xs sm:text-sm"><strong>Payment Method:</strong> {order.payment_method || 'N/A'}</p>
+                      {order.cancelled_at && (
+                        <p className="text-xs sm:text-sm text-red-600">
+                          <strong>Cancelled:</strong> {format(new Date(order.cancelled_at), 'MMM dd, yyyy HH:mm')}
+                          {order.cancellation_reason && (
+                            <span className="block">Reason: {order.cancellation_reason}</span>
                           )}
-                        </div>
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="text-base sm:text-lg font-bold">Total: ₹{order.total?.toFixed(2) || '0.00'}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+    )}
+  </div>
+</TabsContent>
 
-                        <div className="mt-4 pt-4 border-t">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-sm"><strong>Payment Method:</strong> {order.payment_method || 'N/A'}</p>
-                              {order.cancelled_at && (
-                                <p className="text-sm text-red-600">
-                                  <strong>Cancelled:</strong> {format(new Date(order.cancelled_at), 'MMM dd, yyyy HH:mm')}
-                                  {order.cancellation_reason && (
-                                    <span className="block">Reason: {order.cancellation_reason}</span>
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold">Total: ₹{order.total?.toFixed(2) || '0.00'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                ))}
+<TabsContent value="users">
+  <div className="bg-gray-200 border border-gray-500 rounded-lg p-2 sm:p-4 bg-white shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 md:mb-6 gap-3">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">Users Management</h2>
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by name, email, or ID..."
+          className="w-full sm:w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <svg className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+    {profilesLoading ? (
+      <div className="text-center py-8 text-gray-500">Loading users...</div>
+    ) : (
+      <>
+        {/* Mobile Card View */}
+        <div className="block sm:hidden space-y-3">
+          {profiles.map((profile) => (
+            <div key={profile.id} className="bg-white border border-gray-300 rounded-lg p-3 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm text-gray-900 truncate">
+                    {profile.name || 'No name'}
+                  </h3>
+                  <p className="text-xs text-gray-500 truncate">{profile.email}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <p className="text-xs text-gray-400 font-mono">{profile.id}</p>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(profile.id)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Copy ID"
+                    >
+                      <svg className="h-3 w-3 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </TabsContent>
+              
+              <div className="mt-3 pt-2 border-t border-gray-100">
+                 <div className="flex items-center gap-2">
+                  <p className="text-xs font-medium text-gray-600">Contact:</p>
+                  <p className="text-xs text-gray-800">{profile.phone || 'No phone'}</p>
+                </div>
+              </div>
+              
+              {profile.address && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <p className="text-xs font-medium text-gray-600 mb-1">Address</p>
+                  <p className="text-xs text-gray-800 leading-relaxed">
+                    {profile.address}
+                    <br />
+                    {profile.city}, {profile.state} {profile.zip_code}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
-        <TabsContent value="users">
-          <div className="bg-white border border-gray-500 rounded-lg p-4 bg-white shadow-sm">
-            <h2 className="text-2xl font-semibold mb-6">User Management</h2>
-
-            {profilesLoading ? (
-              <div className="text-center py-8">Loading users...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Joined</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {profiles.map((profile) => (
-                    <TableRow key={profile.id}>
-                      <TableCell>{profile.name || 'N/A'}</TableCell>
-                      <TableCell>{profile.email}</TableCell>
-                      <TableCell>{profile.phone || 'N/A'}</TableCell>
-                      <TableCell>
-                        {profile.address ?
-                          `${profile.address}, ${profile.city || ''}, ${profile.state || ''}`.trim() :
-                          'N/A'
-                        }
-                      </TableCell>
-                      <TableCell>{format(new Date(profile.created_at), 'MMM dd, yyyy')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </TabsContent>
-
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto border border-gray-200 rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-500 border border-gray-500">
+                <TableHead className="text-left font-semibold text-gray-900 px-2 py-3">User Info</TableHead>
+                <TableHead className="text-center font-semibold text-gray-900 px-2 py-3">Contact</TableHead>
+                <TableHead className="text-center font-semibold text-gray-900 px-2 py-3">Address</TableHead>
+                <TableHead className="text-center font-semibold text-gray-900 px-2 py-3">Joined</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+                {filteredProfiles.map((profile) => (
+                <TableRow key={profile.id} className="hover:bg-gray-50 border-b border-gray-600">
+                  <TableCell className="p-2 sm:p-3">
+                    <div className="space-y-1">
+                      <div className="font-medium text-sm">{profile.name || 'No name'}</div>
+                      <div className="text-xs text-gray-500">{profile.email}</div>
+                      <div className="flex items-center gap-1">
+                        <div className="text-xs text-gray-400 font-mono">{profile.id}</div>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(profile.id)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          title="Copy ID"
+                        >
+                          <svg className="h-3 w-3 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center text-sm p-2 sm:p-3">
+                    <div className="space-y-1">
+                      <div>{profile.phone || 'No phone'}</div>
+                      <div className="text-xs text-gray-500">{profile.email}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center text-sm p-2 sm:p-3">
+                    {profile.address ? (
+                      <div className="space-y-1">
+                        <div className="text-xs sm:text-sm">{profile.address}</div>
+                        <div className="text-xs text-gray-500">
+                          {profile.city}, {profile.state} {profile.zip_code}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">No address</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center text-xs text-gray-600 p-2 sm:p-3">
+                    {format(new Date(profile.created_at), 'MMM dd, yyyy')}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </>
+    )}
+  </div>
+</TabsContent>
+  {/* <----------------Analytics Tab ----------------> */}
         <TabsContent value="analytics">
           <SalesAnalytics orders={orders} />
         </TabsContent>
@@ -1480,3 +1730,4 @@ const handleConfirmDelete = () => {
 };
 
 export default Admin;
+
