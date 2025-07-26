@@ -1,4 +1,4 @@
-// import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,7 @@ import React, { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-
+import { Search } from 'lucide-react';
 
 
 // Initialize Chart.js
@@ -98,6 +98,7 @@ const Admin: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 const [sortBy, setSortBy] = useState('date_desc');
 const [activeMobileTab, setActiveMobileTab] = useState<'manage' | 'manage'>('manage');
+const [productSearch, setProductSearch] = useState('');
 
   // Fetch products with stock information
   const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery<ProductWithStock[]>({
@@ -157,6 +158,11 @@ const handleConfirmDelete = () => {
         ...order,
         profiles: profilesData?.find(profile => profile.id === order.user_id)
       }));
+
+
+
+
+
 
       const ordersWithItems = await Promise.all(
         (ordersWithProfiles || []).map(async (order) => {
@@ -297,6 +303,22 @@ const handleConfirmDelete = () => {
       });
     }
   });
+
+
+//  product filter 
+        const filteredProducts = useMemo(() => {
+  if (!searchTerm) return products;
+  
+  return products.filter(product => 
+    product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+}, [products, searchTerm]);
+
+
+
+
 
   // Update stock mutation
   const updateStock = useMutation({
@@ -701,10 +723,10 @@ const filteredOrders = useMemo(() => {
 
 
 
- <TabsContent value="products">
+<TabsContent value="products">
   <div className="bg-white rounded-lg shadow p-6">
     <div className="flex justify-between items-center mb-6">
-  <h2 className="text-base md:text-xl lg:text-2xl font-semibold text-gray-800">Products & Stock Management</h2>
+      <h2 className="text-base md:text-xl lg:text-2xl font-semibold text-gray-800">Products & Stock Management</h2>
       {!isAddingNew && (
         <Button 
           onClick={() => {
@@ -719,38 +741,63 @@ const filteredOrders = useMemo(() => {
       )}
     </div>
 
-   {/* Mobile-only sub-tabs */}
-<div className="mb-6 md:hidden">
-  <div className="flex justify-between bg-gray-100 p-1 rounded-md shadow-sm">
-    <button
-      onClick={() => setActiveMobileTab('overview')}
-      className={`flex-1 text-xs md:text-sm font-medium py-2 px-2 whitespace-nowrap rounded-l-lg transition-all duration-200
-        ${activeMobileTab === 'overview'
-          ? 'bg-teal-500 shadow-md'
-          : 'text-black bg-teal-100 hover:bg-blue-200'
-        }`}
-    >
-      Stock Overview
-    </button>
-    <button
-      onClick={() => setActiveMobileTab('manage')}
-      className={`flex-1 text-xs md:text-sm font-medium py-2 px-2 whitespace-nowrap rounded-r-lg transition-all duration-200
-        ${activeMobileTab === 'manage'
-          ? 'bg-teal-500  shadow-md'
-          : 'text-black bg-teal-100 hover:bg-blue-100'
-        }`}
-    >
-      Manage Products
-    </button>
-  </div>
-</div>
+    {/* Search Bar */}
+    <div className="mb-6">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Input
+          type="text"
+          placeholder="Search products by name, unit, or description..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {searchTerm && (
+        <div className="mt-2 text-sm text-gray-600">
+          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+        </div>
+      )}
+    </div>
 
+    {/* Mobile-only sub-tabs */}
+    <div className="mb-6 md:hidden">
+      <div className="flex justify-between bg-gray-100 p-1 rounded-md shadow-sm">
+        <button
+          onClick={() => setActiveMobileTab('overview')}
+          className={`flex-1 text-xs md:text-sm font-medium py-2 px-2 whitespace-nowrap rounded-l-lg transition-all duration-200
+            ${activeMobileTab === 'overview'
+              ? 'bg-teal-500 shadow-md'
+              : 'text-black bg-teal-100 hover:bg-blue-200'
+            }`}
+        >
+          Stock Overview
+        </button>
+        <button
+          onClick={() => setActiveMobileTab('manage')}
+          className={`flex-1 text-xs md:text-sm font-medium py-2 px-2 whitespace-nowrap rounded-r-lg transition-all duration-200
+            ${activeMobileTab === 'manage'
+              ? 'bg-teal-500  shadow-md'
+              : 'text-black bg-teal-100 hover:bg-blue-100'
+            }`}
+        >
+          Manage Products
+        </button>
+      </div>
+    </div>
 
     {/* Mobile Add Product Button - Only show in overview tab */}
     {!isAddingNew && (
       <div className="mb-4 md:hidden">
         {activeMobileTab === 'manage' && (
-
           <Button 
             onClick={() => {
                setActiveMobileTab('manage');
@@ -767,55 +814,55 @@ const filteredOrders = useMemo(() => {
     )}
 
     {/* Desktop: Show everything, Mobile: Show based on active tab */}
-    {/* <div className={`${activeMobileTab === 'overview' ? 'block' : 'hidden'} md:block`}> */}
     <div className={`${activeMobileTab === 'overview' ? 'block' : 'hidden'} md:block`}>
-      {/* Stock Alerts Section - Moved to top for better visibility */}
+      {/* Stock Alerts Section - Improved mobile design */}
       {lowStockProducts.length > 0 && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-yellow-100 to-orange-200 border border-black rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-3 flex items-center text-yellow-800">
-            <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
-            Stock Alerts ({lowStockProducts.length} items need attention)
+        <div className="mb-6 p-3 md:p-4 bg-gradient-to-r from-yellow-100 to-orange-200 border border-black rounded-lg shadow-sm">
+          <h3 className="text-base md:text-lg font-semibold mb-2 md:mb-3 flex items-center text-yellow-800">
+            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 mr-2 text-yellow-600" />
+            <span className="text-sm md:text-base">Stock Alerts ({lowStockProducts.length} items)</span>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
             {lowStockProducts.map(product => (
-              <div key={product.id} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-yellow-700">
-                <div className="flex items-center gap-3">
+              <div key={product.id} className="flex justify-between items-center p-2 md:p-3 bg-white rounded-lg shadow-sm border border-yellow-700">
+                <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                   <img
                     src={product.image}
                     alt={product.title}
-                    className="w-10 h-10 object-cover rounded-md"
+                    className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md flex-shrink-0"
                   />
-                  <div>
-                    <span className="font-medium text-gray-900 text-sm">{product.title}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}> {product.unit} </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
-                        {product.stock_quantity} Unit
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-gray-900 text-xs md:text-sm block truncate">{product.title}</span>
+                    <div className="flex items-center gap-1 md:gap-2 mt-0.5 md:mt-1">
+                      <span className="text-xs text-gray-600">{product.unit}</span>
+                      <span className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
+                        {product.stock_quantity}
                       </span>
+
                     </div>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   onClick={() => handleStockUpdate(product)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white border border-black rounded-lg p-2 md:p-4 shadow-sm"
+                  className="text-xs bg-blue-500 hover:bg-blue-600 text-white border border-black rounded-lg p-1.5 md:p-2 shadow-sm flex-shrink-0 ml-2"
                 >
-                  <Package className="w-4 h-4 mr-0 md:mr-1" />
-                  <span className="hidden md:inline">Restock</span>
+                 
+                  <Package className="w-3 h-3 md:w-4 md:h-4" />
+                  {/* <span className="hidden sm:inline ml-1 text-xs">Restock</span> */}
+                  {/* <span className="ml-1 text-xs">Restock</span> */}
+                  <span className="ml-1 text-[10px] md:text-xs">Restock</span>
                 </Button>
               </div>
             ))}
           </div>
         </div>
       )}
-
-    
     </div>
-
 
     {/* Products Table - Desktop: Always visible, Mobile: Only in manage tab */}
     <div className={`${activeMobileTab === 'manage' ? 'block' : 'hidden'} md:block`}>
- {isAddingNew && (
+      {isAddingNew && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1008,134 +1055,139 @@ const filteredOrders = useMemo(() => {
         <div className="overflow-hidden rounded-lg border border-gray-900 shadow-sm">
           {/* Mobile: Card layout, Desktop: Table layout */}
           <div className="md:hidden">
-            {products.map((product, index) => (
-              <div key={product.id} className="border-b border-gray-200 p-4 bg-white">
-              {editingProduct?.id === product.id ? (
-                // --- MOBILE EDIT FORM ---
-                <div>
-                  <div className="mb-2">
-                    <label className="block text-xs font-medium mb-1 text-gray-700">Title *</label>
-                    <Input
-                      name="title"
-                      value={editingProduct.title}
-                      onChange={handleEditChange}
-                      className="font-medium focus:ring-2 focus:ring-blue-500"
-                      placeholder="Product title"
-                    />
-                  </div>
-                  <div className="mb-2">
-                    <label className="block text-xs font-medium mb-1 text-gray-700">Price (₹) *</label>
-                    <Input
-                      name="price"
-                      value={editingProduct.price}
-                      onChange={handleEditChange}
-                      placeholder="100"
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="mb-2">
-                    <label className="block text-xs font-medium mb-1 text-gray-700">Unit *</label>
-                    <Input
-                      name="unit"
-                      value={editingProduct.unit}
-                      onChange={handleEditChange}
-                      placeholder="1 L, 500g, etc."
-                      className="focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  {/* Add more fields as needed */}
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      onClick={handleSaveEdit}
-                      disabled={updateProduct.isPending}
-                      className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancelEdit}
-                      className="border-gray-300 flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                // --- NORMAL PRODUCT CARD ---
-                <>
-                  <div className="flex items-start gap-4 mb-4">
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="w-16 h-16 object-cover rounded-lg shadow-sm flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 mb-1">{product.title}</h3>
-                      <div className="text-sm text-gray-600 mb-2">{product.unit}</div>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
-                          {product.stock_status === 'in_stock' ? '✓ In Stock' :
-                            product.stock_status === 'low_stock' ? '⚠ Low Stock' : '✗ Out of Stock'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            {filteredProducts.map((product, index) => (
+            <div key={product.id} className="border-b-2 border-gray-300 p-4 bg-white shadow-sm">
+  {editingProduct?.id === product.id ? (
+    // --- MOBILE EDIT FORM ---
+    <div>
+      <div className="mb-2">
+        <label className="block text-xs font-medium mb-1 text-gray-700">Title *</label>
+        <Input
+          name="title"
+          value={editingProduct.title}
+          onChange={handleEditChange}
+          className="font-medium focus:ring-2 focus:ring-blue-500"
+          placeholder="Product title"
+        />
+      </div>
+      <div className="mb-2">
+        <label className="block text-xs font-medium mb-1 text-gray-700">Price (₹) *</label>
+        <Input
+          name="price"
+          value={editingProduct.price}
+          onChange={handleEditChange}
+          placeholder="100"
+          className="focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div className="mb-2">
+        <label className="block text-xs font-medium mb-1 text-gray-700">Unit *</label>
+        <Input
+          name="unit"
+          value={editingProduct.unit}
+          onChange={handleEditChange}
+          placeholder="1 L, 500g, etc."
+          className="focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      {/* Add more fields as needed */}
+      <div className="flex gap-2 mt-3">
+        <Button
+          size="sm"
+          onClick={handleSaveEdit}
+          disabled={updateProduct.isPending}
+          className="bg-green-600 hover:bg-green-700 text-white flex-1 text-xs px-2"
+        >
+          <SaveIcon className="w-3 h-3 mr-1" />
+          Save
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCancelEdit}
+          className="border-gray-300 flex-1 text-xs px-2"
+        >
+          <X className="w-3 h-3 mr-1" />
+          Cancel
+        </Button>
+      </div>
+    </div>
+  ) : (
+    // --- NORMAL PRODUCT CARD ---
+    <>
+      <div className="flex items-start gap-3 mb-3">
+        <img
+          src={product.image}
+          alt={product.title}
+          className="w-16 h-16 object-cover rounded-lg shadow-sm flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 mb-1 text-sm leading-tight">{product.title}</h3>
+          <div className="text-xs text-gray-600 mb-2">{product.unit}</div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
+              {product.stock_status === 'in_stock' ? '✓ In Stock' :
+                product.stock_status === 'low_stock' ? '⚠ Low Stock' : '✗ Out of Stock'}
+            </span>
+          </div>
+        </div>
+      </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Price</div>
-                      <div className="font-semibold text-gray-900">₹{product.price}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Stock</div>
-                      <div className="font-semibold text-gray-900">{product.stock_quantity}</div>
-                    </div>
-                  </div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bg-gray-50 p-2 rounded">
+          <div className="text-xs text-gray-500">Price</div>
+          <div className="font-semibold text-gray-900 text-sm">₹{product.price}</div>
+        </div>
+        <div className="bg-gray-50 p-2 rounded">
+          <div className="text-xs text-gray-500">Stock</div>
+          <div className="font-semibold text-gray-900 text-sm">{product.stock_quantity}</div>
+        </div>
+      </div>
 
-                  <div className="flex gap-2 mb-3">
-                    <Button
-                      size="sm"
-                      onClick={() => handleStockSave('add10', product)}
-                      className="bg-green-500 hover:bg-green-600 text-white flex-1"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add 10
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStockUpdate(product)}
-                      className="bg-blue-400 hover:bg-blue-500 border-black text-black flex-1"
-                    >
-                      Modify
-                    </Button>
-                  </div>
+      {/* Stock Action Buttons */}
+      <div className="flex gap-2 mb-3">
+        <Button
+          size="sm"
+          onClick={() => handleStockSave('add10', product)}
+          className="bg-green-500 hover:bg-green-600 text-white flex-1 text-xs px-2 py-1.5"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add 10 
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => handleStockUpdate(product)}
+          className="bg-blue-400 hover:bg-blue-500 border-black text-black flex-1 text-xs px-2 py-1.5"
+        >
+          <Package className="w-3 h-3 mr-1" />
+          Stock
+        </Button>
+      </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(product)}
-                      className="border-blue-900 text-blue-600 bg-slate-300 hover:bg-blue-500 flex-1"
-                    >
-                      <Pencil className="w-4 h-4 mr-1" />
-                      Modify Product
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDeleteClick(product.id)}
-                      className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm flex-1"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete Product
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+      {/* Product Action Buttons */}
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleEdit(product)}
+          className="border-blue-900 text-blue-600 bg-slate-300 hover:bg-blue-500 flex-1 text-xs px-2 py-1.5"
+        >
+          <Pencil className="w-3 h-3 mr-1" />
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => handleDeleteClick(product.id)}
+          className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm flex-1 text-xs px-2 py-1.5"
+        >
+          <Trash2 className="w-3 h-3 mr-1" />
+          Delete 
+        </Button>
+      </div>
+    </>
+  )}
+</div>
           ))}
           </div>
 
@@ -1151,7 +1203,7 @@ const filteredOrders = useMemo(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product, index) => (
+                {filteredProducts.map((product, index) => (
                   <TableRow
                     key={product.id}
                     className={`${
@@ -1367,8 +1419,8 @@ const filteredOrders = useMemo(() => {
                                   className="bg-green-500 hover:bg-green-600 text-white h-8 px-2"
                                   title="Add 10 Instantly"
                                 >
-                                  <Plus className="w-3 h-3" />
-                                  <div>Add 10</div>
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add 10
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1376,7 +1428,8 @@ const filteredOrders = useMemo(() => {
                                   className="bg-blue-400 hover:bg-blue-500 border-black h-8 px-2 text-black"
                                   title="Modify Stock"
                                 >
-                                  <div>Modify</div>
+                                  <Package className="w-3 h-3 mr-1" />
+                                  Modify
                                 </Button>
                               </div>
                             </div>
@@ -1398,8 +1451,8 @@ const filteredOrders = useMemo(() => {
                               disabled={updateProduct.isPending}
                               className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
                             >
-                              <div>Save Changes</div>
-                              <SaveIcon className="w-4 h-4" />
+                              <SaveIcon className="w-4 h-4 mr-1" />
+                              Save Changes
                             </Button>
                             <Button
                               size="sm"
@@ -1407,8 +1460,8 @@ const filteredOrders = useMemo(() => {
                               onClick={handleCancelEdit}
                               className="border-gray-300 bg-red-400 hover:bg-red-500"
                             >
-                              <div>Cancel</div>
-                              <X className="w-4 h-4" />
+                              <X className="w-4 h-4 mr-1" />
+                              Cancel
                             </Button>
                           </>
                         ) : (
@@ -1419,8 +1472,8 @@ const filteredOrders = useMemo(() => {
                               onClick={() => handleEdit(product)}
                               className="border-blue-900 text-blue-600 bg-slate-300 hover:bg-blue-500"
                             >
-                              <Pencil className="w-4 h-4" />
-                              <div>Modify Product</div>
+                              <Pencil className="w-4 h-4 mr-1" />
+                              Modify Product
                             </Button>
                             <Button
                               size="sm"
@@ -1428,8 +1481,8 @@ const filteredOrders = useMemo(() => {
                               onClick={() => handleDeleteClick(product.id)}
                               className="bg-red-600 hover:bg-red-600 hover:text-black shadow-sm"
                             >
-                              <Trash2 className="w-4 h-4" />
-                              <div>Delete Product</div>
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete Product
                             </Button>
                           </>
                         )}
@@ -1438,51 +1491,126 @@ const filteredOrders = useMemo(() => {
                   </TableRow>
                 ))}
               </TableBody>
-      </Table>
+            </Table>
           </div>
         </div>
       )}
     </div>
 
     {/* Stock Update Modal */}
-    {stockUpdateProduct && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <h3 className="text-lg font-semibold mb-4">Update Stock for {stockUpdateProduct.title}</h3>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Current Stock: {stockUpdateProduct.stock_quantity}</label>
-            <Input
-              type="number"
-              min="0"
-              value={stockUpdateQuantity}
-              onChange={(e) => setStockUpdateQuantity(e.target.value)}
-              placeholder="Enter new stock quantity"
-              className="w-full"
-            />
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => handleStockSave('update', stockUpdateProduct)}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
-            >
-              Update Stock
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStockUpdateProduct(null);
-                setStockUpdateQuantity('');
-              }}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-          </div>
+ {stockUpdateProduct && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
+    <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md mx-auto p-5 sm:p-6 shadow-2xl 
+                    transform transition-all duration-300 scale-100 
+                    max-h-[85vh] sm:max-h-[90vh] overflow-y-auto
+                    border border-gray-200">
+      
+      {/* Header */}
+      <div className="text-center mb-5">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 leading-tight">
+          Update Stock
+        </h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm font-medium text-blue-800 truncate">
+            {stockUpdateProduct.title}
+          </p>
+          <p className="text-xs text-blue-600 mt-1">
+            Current Stock: <span className="font-semibold">{stockUpdateProduct.stock_quantity}</span> {stockUpdateProduct.unit}
+          </p>
         </div>
       </div>
-    )}
 
- 
+      {/* Quantity Input */}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Quantity
+        </label>
+        <Input
+          type="number"
+          min="0"
+          value={stockUpdateQuantity}
+          onChange={(e) => setStockUpdateQuantity(parseInt(e.target.value) || 0)}
+          placeholder="Enter quantity"
+          className="w-full h-12 text-center text-lg font-medium border-2 border-gray-300 
+                     rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
+                     transition-all duration-200"
+        />
+      </div>
+
+      {/* Action Buttons */}
+      <div className="space-y-3 mb-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={() => handleStockSave('add')}
+            disabled={updateStock.isPending}
+            className="bg-green-500 hover:bg-green-600 text-white h-11 rounded-xl 
+                       font-medium shadow-md hover:shadow-lg transition-all duration-200
+                       flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Stock
+          </Button>
+          <Button
+            onClick={() => handleStockSave('subtract')}
+            disabled={updateStock.isPending}
+            className="bg-orange-500 hover:bg-orange-600 text-white h-11 rounded-xl 
+                       font-medium shadow-md hover:shadow-lg transition-all duration-200
+                       flex items-center justify-center gap-2"
+          >
+            <Minus className="w-4 h-4" />
+            Remove
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={() => handleStockSave('set')}
+            disabled={updateStock.isPending}
+            className="bg-blue-500 hover:bg-blue-600 text-white h-11 rounded-xl 
+                       font-medium shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            Set Exact
+          </Button>
+          <Button
+            onClick={() => handleStockSave('add10')}
+            disabled={updateStock.isPending}
+            className="bg-purple-500 hover:bg-purple-600 text-white h-11 rounded-xl 
+                       font-medium shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            Quick +10
+          </Button>
+        </div>
+      </div>
+
+      {/* Out of Stock Button */}
+      <Button
+        onClick={() => {
+          setStockUpdateQuantity(0);
+          handleStockSave('set');
+        }}
+        disabled={updateStock.isPending}
+        className="w-full bg-red-500 hover:bg-red-600 text-white h-11 rounded-xl 
+                   font-medium shadow-md hover:shadow-lg transition-all duration-200 mb-4"
+      >
+        Mark Out of Stock
+      </Button>
+
+      {/* Cancel Button */}
+      <Button
+        variant="outline"
+        onClick={() => {
+          setStockUpdateProduct(null);
+          setStockUpdateQuantity(0);
+        }}
+        className="w-full h-11 rounded-xl border-2 border-gray-300 hover:border-gray-400 
+                   hover:bg-gray-50 font-medium transition-all duration-200"
+      >
+        Cancel
+      </Button>
+    </div>
+  </div>
+)}
+
   </div>
 </TabsContent>
 
@@ -1873,84 +2001,11 @@ const filteredOrders = useMemo(() => {
         </TabsContent>
       </Tabs>
 
-      {/* Stock Update Modal */}
-      {stockUpdateProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              Update Stock for {stockUpdateProduct.title}
-            </h3>
-            <p className="text-m  text-black-600 mb-4">
-              Current Stock: {stockUpdateProduct.stock_quantity} : {stockUpdateProduct.unit}
-            </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Quantity</label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={stockUpdateQuantity}
-                  onChange={(e) => setStockUpdateQuantity(parseInt(e.target.value) || 0)}
-                  placeholder="Enter quantity"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => handleStockSave('add')}
-                  disabled={updateStock.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Add Stock
-                </Button>
-                <Button
-                  size="sm"
-                
-                  onClick={() => handleStockSave('set')}
-                  disabled={updateStock.isPending}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Out of Stock
-                </Button>
-               
-                <Button
-                  size="sm"
-                  onClick={() => handleStockSave('add10')}
-                  disabled={updateStock.isPending}
-                  variant="outline"
-                >
-                  Quick +10
-                </Button>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStockUpdateProduct(null);
-                    setStockUpdateQuantity(0);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };
 
 export default Admin;
-
-
-
-
-
-
-
-
 
