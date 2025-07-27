@@ -19,28 +19,28 @@ import { useNavigate } from 'react-router-dom';
 
 // Define order status colors and icons
 const STATUS_CONFIG = {
-  pending: { 
-    color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
+  pending: {
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     icon: Clock,
     label: 'Cash on Delivery'
   },
-  paid: { 
-    color: 'bg-green-100 text-green-800 border-green-200', 
+  paid: {
+    color: 'bg-green-100 text-green-800 border-green-200',
     icon: CheckCircle,
     label: 'Paid'
   },
-  shipped: { 
-    color: 'bg-blue-100 text-blue-800 border-blue-200', 
+  shipped: {
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: Truck,
     label: 'Shipped'
   },
-  delivered: { 
-    color: 'bg-emerald-100 text-emerald-800 border-emerald-200', 
+  delivered: {
+    color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: Package,
     label: 'Delivered'
   },
-  failed: { 
-    color: 'bg-red-100 text-red-800 border-red-200', 
+  failed: {
+    color: 'bg-red-100 text-red-800 border-red-200',
     icon: XCircle,
     label: 'Failed'
   }
@@ -101,10 +101,10 @@ const Orders: React.FC = () => {
   };
 
   // Fetch user's orders with order items and try to get product details
-  const { 
-    data: orders, 
-    isLoading, 
-    error 
+  const {
+    data: orders,
+    isLoading,
+    error
   } = useQuery({
     queryKey: ['orders', user?.id],
     queryFn: async () => {
@@ -144,7 +144,7 @@ const Orders: React.FC = () => {
 
         if (error) {
           console.error('Error with product relationship:', error);
-          
+
           // Fallback: fetch orders without product details
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('orders')
@@ -192,7 +192,7 @@ const Orders: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select('id, title, image');
-      
+
       if (error) {
         console.error('Error fetching products:', error);
         return [];
@@ -253,19 +253,19 @@ const Orders: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="pt-28 pb-20 bg-gray-50 min-h-screen"
+      className="pt-16 pb-20 bg-gray-50 min-h-screen"
     >
       <div className="section-container">
-        <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">My Orders</h1>
-          <p className="text-gray-600">Track and manage your orders</p>
+        <div className="mb-4">
+          <h1 className="text-3xl font-display font-bold text-gray-900 mb-1">My Orders</h1>
+          <p className="text-gray-600 text-base">Track and manage your orders</p>
         </div>
-        
+
         <div className="space-y-4">
           {orders.map((order) => {
             const orderDate = new Date(order.created_at);
             const totalItems = order.order_items.reduce(
-              (sum, item) => sum + item.quantity, 
+              (sum, item) => sum + item.quantity,
               0
             );
             const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
@@ -277,15 +277,33 @@ const Orders: React.FC = () => {
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-lg font-semibold">
-                          Order #{order.order_number || order.id.slice(0, 8).toUpperCase()}
-                        </CardTitle>
-                        <Badge className={`${statusConfig.color} border font-medium`}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
+                      <div className="mb-2">
+                        <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-left">
+                          <div className="flex flex-col items-start">
+                            <CardTitle className="text-lg font-semibold">
+                              Order #{order.order_number || order.id.slice(0, 8).toUpperCase()}
+                            </CardTitle>
+
+                            {/* Only show on small screens (left aligned) */}
+                            <div className="sm:hidden mt-1">
+                              <Badge className={`${statusConfig.color} border font-medium w-fit`}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {statusConfig.label}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Only show on medium and above (inline right) */}
+                          <div className="hidden sm:block">
+                            <Badge className={`${statusConfig.color} border font-medium w-fit`}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {statusConfig.label}
+                            </Badge>
+                          </div>
+                        </div>
+
                       </div>
+
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <span>Placed on {orderDate.toLocaleDateString('en-IN', {
                           day: 'numeric',
@@ -298,12 +316,13 @@ const Orders: React.FC = () => {
                         <span className="font-medium text-gray-900">₹{order.total.toFixed(2)}</span>
                       </div>
                     </div>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleOrderExpansion(order.id)}
-                      className="ml-4 flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      className="ml-4 flex items-center gap-1 text-gray-600 hover:text-gray-900 text-xs sm:text-sm"
+
                     >
                       {isExpanded ? (
                         <>
@@ -319,51 +338,66 @@ const Orders: React.FC = () => {
                     </Button>
                   </div>
                 </CardHeader>
-                
+
                 {/* Order Items Preview (Always Visible) */}
                 <CardContent className="pt-0">
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 px-4 py-3 border-b">
-                      <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700">
+                  <div className="w-full border rounded-lg bg-white shadow-sm px-4 py-3 sm:px-6 sm:py-4">
+
+                    {/* Table header: hide on mobile, show on sm+ */}
+                    <div className="hidden sm:block bg-gray-50 px-4 py-3 border-b rounded-t-lg">
+                      <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700">
                         <span>Product</span>
-                        <span className="text-center">Quantity</span>
-                        <span className="text-center">Each Price</span>
-                        <span className="text-right">Total Price</span>
+                        <span className="text-left">Qty</span>
+                        <span className="text-left">Each Price</span>
+                        <span className="text-lef">Total</span>
                       </div>
                     </div>
-                    
-                    <div className="divide-y">
+                    <div className="space-y-2 sm:space-y-0">
                       {order.order_items.map((item) => {
                         const productInfo = item.products || productMap[item.product_id];
-                        
                         return (
-                          <div key={item.id} className="grid grid-cols-4 gap-4 p-4 hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center space-x-3">
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:grid sm:grid-cols-4 gap-2 sm:gap-4 p-2 sm:p-4 border-b last:border-b-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none"
+                          >
+                            {/* Product info */}
+                            <div className="flex items-center space-x-2 sm:space-x-3">
                               {productInfo?.image && (
-                                <img 
-                                  src={productInfo.image} 
+                                <img
+                                  src={productInfo.image}
                                   alt={productInfo.title}
                                   className="w-12 h-12 object-cover rounded-md border"
                                 />
                               )}
                               <div className="min-w-0 flex-1">
-                                <p className="font-medium text-gray-900 truncate">
+                                <p className="font-medium text-gray-900 truncate text-sm sm:text-base">
                                   {productInfo?.title || `Product ${item.product_id.slice(0, 8)}`}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs text-gray-500">
                                   ID: {item.product_id.slice(0, 8)}...
                                 </p>
                               </div>
                             </div>
-                            <div className="text-center self-center">
-                              <span className="bg-gray-100 px-2 py-1 rounded text-sm font-medium">
-                                {item.quantity}
+                            {/* On mobile, show all details stacked */}
+                            <div className="flex sm:hidden flex-col gap-1 mt-1 text-xs text-gray-700 pl-14">
+                              <span>
+                                <span className="font-semibold">Qty:</span> {item.quantity}
+                              </span>
+                              <span>
+                                <span className="font-semibold">Each:</span> ₹{item.price.toFixed(2)}
+                              </span>
+                              <span>
+                                <span className="font-semibold">Total:</span> ₹{(item.quantity * item.price).toFixed(2)}
                               </span>
                             </div>
-                            <div className="text-center self-center font-medium">
+                            {/* On desktop, show columns */}
+                            <div className="hidden sm:flex text-center self-center font-medium">
+                              {item.quantity}
+                            </div>
+                            <div className="hidden sm:flex text-center self-center font-medium">
                               ₹{item.price.toFixed(2)}
                             </div>
-                            <div className="text-right self-center font-semibold">
+                            <div className="hidden sm:flex text-right self-center font-semibold text-base">
                               ₹{(item.quantity * item.price).toFixed(2)}
                             </div>
                           </div>
@@ -439,7 +473,7 @@ const Orders: React.FC = () => {
                     </motion.div>
                   )}
 
-                 
+
                 </CardContent>
               </Card>
             );
