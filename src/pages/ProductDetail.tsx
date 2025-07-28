@@ -421,7 +421,15 @@ const ProductDetail = () => {
         </button>
         <div className="grid md:grid-cols-2 gap-10">
           <div className="relative">
-            <img src={product.image || '/placeholder.png'} alt={product.title} className="rounded-xl" />
+            
+           <div className="w-full max-w-[600px] mx-auto p-2 sm:p-4">
+              <img
+                src={product.image || '/placeholder.png'}
+                alt={product.title}
+                className="w-full h-[250px] sm:h-[600px] object-cover rounded-2xl shadow-md"
+              />
+            </div>
+            
             {/* Stock Status Overlay */}
             {isOutOfStock && (
               <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center rounded-xl">
