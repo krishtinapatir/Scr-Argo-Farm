@@ -481,7 +481,7 @@ const ProductsTab: React.FC = () => {
                       <div className="flex items-center gap-1 md:gap-2 mt-0.5 md:mt-1">
                         <span className="text-xs text-gray-600">{product.unit}</span>
                         <span className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stock_status)}`}>
-                          {product.stock_quantity}
+                                                  quantity {product.stock_quantity}
                         </span>
                       </div>
                     </div>
