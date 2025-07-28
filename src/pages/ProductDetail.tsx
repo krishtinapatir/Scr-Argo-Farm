@@ -262,7 +262,7 @@ const ProductDetail = () => {
       toast({ title: "Login required", description: "Please login first", variant: "destructive" });
       navigate('/auth');
     } else {
-      navigate('/cart');
+      navigate('/checkout');
     }
   };
 
