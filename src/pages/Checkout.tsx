@@ -1015,10 +1015,10 @@ const Checkout = () => {
     );
   }
 
-  if (cartWithProducts.length === 0) {
-    navigate('/cart');
-    return null;
-  }
+  // if (cartWithProducts.length === 0) {
+  //   navigate('/cart');
+  //   return null;
+  // }
 
   return (
     <motion.main
