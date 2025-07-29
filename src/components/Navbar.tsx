@@ -159,7 +159,22 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Navigation Toggle */}
-          <div className="flex md:hidden">
+          {/* Cart Icon + Hamburger Toggle for Mobile */}
+          <div className="flex items-center gap-4 md:hidden">
+            {/* Cart Icon (Topbar on small screen only) */}
+            <Link
+              to="/cart"
+              className="relative text-gray-700 hover:text-brand-red"
+            >
+              <ShoppingCart className="h-6 w-6" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-brand-red text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Hamburger Icon */}
             <button
               onClick={toggleMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-brand-red hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-red"
