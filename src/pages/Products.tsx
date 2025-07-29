@@ -123,9 +123,10 @@ const Products = () => {
     }
   };
 
-  return (
-    <motion.main
-      initial={{ opacity: 0 }}
+  try {
+    return (
+      <motion.main
+        initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
@@ -411,6 +412,12 @@ const Products = () => {
       </section>
     </motion.main>
   );
+ } catch (error) {
+    console.error("❌ Error rendering Products page:", error);
+    return <div className="p-6 text-red-600"></div>;
+  }
+
 };
 
 export default Products;
+
