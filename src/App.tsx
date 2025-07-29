@@ -27,6 +27,7 @@ import Products from "./pages/Products";
 import ShippingPolicy from "./pages/ShippingPolicy";
 import Terms from "./pages/Terms";
 import UserProfile from "./pages/UserProfile.tsx";
+import BottomNavbar from "./components/BottomNavbar";
 const queryClient = new QueryClient();
 
 // Create a separate component for the app content that uses the language context
@@ -61,7 +62,7 @@ const AppContent = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AnimatePresence>
-            
+            <BottomNavbar /> {/*  fixed bottom navbar */}
             <Footer />
           </BrowserRouter>
         </TooltipProvider>
