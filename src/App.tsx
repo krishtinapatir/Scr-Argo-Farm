@@ -61,7 +61,7 @@ const AppContent = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AnimatePresence>
-             <BottomNavbar />  {/*  only visible on small screens */}
+            
             <Footer />
           </BrowserRouter>
         </TooltipProvider>
