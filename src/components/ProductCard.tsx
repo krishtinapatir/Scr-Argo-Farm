@@ -100,10 +100,23 @@ const ProductCard: React.FC<ProductCardProps> = ({
       // Invalidate cart query to refresh the cart
       queryClient.invalidateQueries({ queryKey: ['cart'] });
 
-      toast({
+      //button added in message
+     toast({
         title: "Added to cart",
-        description: `${title} has been added to your cart.`,
+        description: (
+          <div className="flex flex-col items-start gap-2">
+            <span>{title} has been added to your cart.</span>
+            <a
+              href="/cart"
+              className="px-3 py-1 text-sm rounded-md bg-brand-red text-white hover:bg-brand-red/90 text-center block"
+            >
+              View Cart
+            </a>
+          </div>
+        ),
       });
+
+      
     } catch (error) {
       console.error("Error adding to cart:", error);
       toast({
