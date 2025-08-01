@@ -225,6 +225,18 @@ const Navbar = () => {
             <User className="h-5 w-5 mr-2" />
             My Orders
           </Link>
+
+          {user && !isAdmin && (
+            <Link
+              to="/user-profile"
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-brand-cream hover:text-brand-red flex items-center"
+              onClick={closeMenu}
+            >
+              <User className="h-5 w-5 mr-2" />
+              Edit Profile
+            </Link>
+          )}
+
           
           {isAdmin && (
             <Link
