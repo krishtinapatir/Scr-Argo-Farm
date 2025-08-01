@@ -53,7 +53,7 @@ const AppContent = () => {
                 <Route path="/shipping-policy" element={<ShippingPolicy />} />
                 <Route path="/cancellations" element={<CancellationsAndRefunds />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/password_reset" element={<ResetPassword />} />
+               <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
